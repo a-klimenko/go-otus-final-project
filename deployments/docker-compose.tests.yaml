@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  rotator_tests:
+    build:
+      context: ../
+      dockerfile: ./build/tests/Dockerfile
+    networks:
+      - rotator_test_net
+
+networks:
+  rotator_test_net:
+    external:
+      name: rotator_network
