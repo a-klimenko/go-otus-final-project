@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  rotator_db:
+    build: ../build/db
+    container_name: rotator-db
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - ${DB_PORT}:5432
+    restart: always
+
+  migrator:
+    container_name: migrator
+    build:
+      context: ../
+      dockerfile: ./build/migrator/Dockerfile
+    restart: on-failure
+    depends_on:
+      - rotator_db
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    command: /go/bin/goose postgres "postgres://${DB_USER}:${DB_PASSWORD}@rotator-db:5432/${DB_NAME}?sslmode=disable" up
+
+  rotator:
+    build:
+      context: ../
+      dockerfile: ./build/rotator/Dockerfile
+    container_name: rotator
+    restart: always
+    depends_on:
+      - rotator_db
+    volumes:
+      - ../logs/rotator/:/opt/rotator/logs
+    ports:
+      - ${GRPC_PORT}:50051
+
+networks:
+  default:
+    name: rotator_network
